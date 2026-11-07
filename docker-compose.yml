@@ -1,0 +1,19 @@
+services:
+  portal:
+    image: adlc-portal:local
+    build:
+      context: .
+    ports:
+      - "127.0.0.1:${ADLC_PREVIEW_PORT:-8000}:8000"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./.adlc/evidence:/app/.adlc/evidence:ro
+      - portal-state:/state
+volumes:
+  portal-state:

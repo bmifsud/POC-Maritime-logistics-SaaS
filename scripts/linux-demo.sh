@@ -2,6 +2,11 @@
 # Run from an extracted checkout on a supported Linux host. Never changes firewall/SSH/VPN.
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+# Restricted ARM64 hosts may have user-local browser libraries instead of system packages.
+LIBS="$HOME/.local/maritime-libs/usr/lib/$(uname -m)-linux-gnu"
+if [[ -f "$LIBS/libnspr4.so" && -f "$LIBS/libnss3.so" ]]; then
+  export LD_LIBRARY_PATH="$LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
 case "${1:-help}" in
  doctor)
   for tool in node npm ssh docker; do command -v "$tool" || { echo "Missing prerequisite: $tool" >&2; exit 1; }; done

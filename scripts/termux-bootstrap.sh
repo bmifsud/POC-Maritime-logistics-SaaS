@@ -31,7 +31,7 @@ else
  echo 'Docker unavailable: container acceptance remains BLOCKED. Browser demo can continue.'
 fi
 cd frontend
-nohup node support/maritime/controller.mjs > "$CHECKOUT/controller.log" 2>&1 < /dev/null &
+nohup bash "$CHECKOUT/scripts/linux-demo.sh" serve > "$CHECKOUT/controller.log" 2>&1 < /dev/null &
 PID=$!
 printf '%s\n' "$PID" > "$CHECKOUT/controller.pid"
 for attempt in $(seq 1 30); do

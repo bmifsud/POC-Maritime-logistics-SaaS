@@ -2,9 +2,11 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { testArguments } from './test-selection.mjs';
 import { repository, validateSelection } from './branches.mjs';
-const [branch, revision, report] = process.argv.slice(2);
+const [branch, revision, report, selection = 'all'] = process.argv.slice(2);
 validateSelection(branch, revision);
+const filter = testArguments(selection);
 const checkout = await fs.mkdtemp(path.join(os.tmpdir(), 'maritime-branch-'));
 const env = { PATH: process.env.PATH, HOME: process.env.HOME, LANG: 'C.UTF-8', GIT_TERMINAL_PROMPT: '0', LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH ?? '', PLAYWRIGHT_HTML_OUTPUT_DIR: report, MARITIME_DEMO: '1' };
 async function execute(command, args, cwd, timeout) {
@@ -31,7 +33,7 @@ try {
   console.log('STAGE installing');
   await execute('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], frontend, 240000);
   console.log('STAGE testing');
-  await execute('npm', ['run', 'test:maritime:demo'], frontend, 120000);
+  await execute('npm', ['run', 'test:maritime:demo', ...filter], frontend, 120000);
 } catch (error) { console.error(error.message); process.exitCode = 1; }
 finally {
   // Coreutils removal also supports restricted Android-backed filesystems where Node unlink fails.

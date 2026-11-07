@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { testArguments } from './test-selection.mjs';
 import { listBranches, validateSelection } from './branches.mjs';
 import { pruneReports } from './retention.mjs';
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -48,15 +49,15 @@ const server = http.createServer(async (req, res) => {
     let body = '';
     for await (const chunk of req) { body += chunk; if (body.length > 2048) return send(res, 413, { error: 'Request too large' }); }
     let selected;
-    try { selected = JSON.parse(body); validateSelection(selected.branch, selected.revision); } catch { return send(res, 400, { error: 'Select an approved branch and revision' }); }
+    try { selected = JSON.parse(body); validateSelection(selected.branch, selected.revision); testArguments(selected.test); } catch { return send(res, 400, { error: 'Select an approved branch and revision' }); }
     if (active) return send(res, 409, { error: 'Run already active', id: active.id });
     const id = crypto.randomUUID();
     active = { id, status: 'preparing', branch: selected.branch, revision: selected.revision };
     const report = path.join(output, id);
     try { await fs.mkdir(report); } catch { active = null; return send(res, 500, { error: 'Cannot create run directory' }); }
-    const run = { id, status: 'running', startedAt: new Date().toISOString(), output: '', branch: selected.branch, revision: selected.revision, dirty: false };
+    const run = { id, status: 'running', startedAt: new Date().toISOString(), output: '', test: selected.test ?? 'all', branch: selected.branch, revision: selected.revision, dirty: false };
     active = run;
-    child = spawn(process.execPath, [fileURLToPath(new URL('./branch-runner.mjs', import.meta.url)), selected.branch, selected.revision, report], { cwd: root, shell: false, detached: true, env: { ...process.env, PLAYWRIGHT_HTML_OUTPUT_DIR: report } });
+    child = spawn(process.execPath, [fileURLToPath(new URL('./branch-runner.mjs', import.meta.url)), selected.branch, selected.revision, report, selected.test ?? 'all'], { cwd: root, shell: false, detached: true, env: { ...process.env, PLAYWRIGHT_HTML_OUTPUT_DIR: report } });
     const append = chunk => { run.output = (run.output + chunk.toString()).slice(-24000); };
     child.stdout.on('data', append); child.stderr.on('data', append);
     child.on('error', error => { void finish(run, -1, error.message); });

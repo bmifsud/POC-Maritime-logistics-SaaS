@@ -62,10 +62,12 @@ done
 tail -40 "$LOG"
 exit 1
 LINUX
-if ! curl -fsS --max-time 3 http://127.0.0.1:14400/health >/dev/null 2>&1; then
-  "${SSH[@]}" -fN -o ExitOnForwardFailure=yes -L 127.0.0.1:14400:127.0.0.1:4400 b@127.0.0.1
+# Same-device Termux/Debian share loopback; avoid unnecessary conflicting tunnels.
+URL=http://127.0.0.1:4400
+if ! curl -fsS --max-time 5 "$URL/health"; then
+  echo 'Dashboard is not reachable from Termux loopback. Check the Debian controller log.' >&2
+  exit 1
 fi
-curl -fsS --max-time 5 http://127.0.0.1:14400/health
-printf '\nOpen http://127.0.0.1:14400 and select a branch.\n'
+printf '\nOpen %s and select a branch.\n' "$URL"
 if command -v termux-wake-lock >/dev/null; then termux-wake-lock || true; fi
-if command -v termux-open-url >/dev/null; then termux-open-url http://127.0.0.1:14400; fi
+if command -v termux-open-url >/dev/null; then termux-open-url "$URL"; fi

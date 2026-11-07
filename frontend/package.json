@@ -11,7 +11,12 @@
     "test:components": "playwright test",
     "lint": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
     "test:ci": "playwright test --forbid-only",
-    "bom": "cyclonedx-npm --spec-version 1.7 --output-format JSON --output-file ../.adlc/evidence/aibom.json"
+    "test:maritime": "playwright test --config=playwright.maritime.config.ts",
+    "test:maritime:demo": "playwright test --config=playwright.maritime.config.ts --workers=1",
+    "test:maritime:type-check": "tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --skipLibCheck pages/BookingPage.ts fixtures/maritimeFixtures.ts tests/maritime/*.ts",
+    "demo:controller": "node support/maritime/controller.mjs",
+    "bom": "cyclonedx-npm --spec-version 1.7 --output-format JSON --output-file ../.adlc/evidence/aibom.json",
+    "demo:preflight": "node support/maritime/preflight.mjs"
   },
   "dependencies": {
     "lucide-react": "0.468.0",

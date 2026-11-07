@@ -39,6 +39,10 @@ def commands() -> dict[str, list[str]]:
         'frontend-build': ['npm', '--prefix', 'frontend', 'run', 'build'],
         'npm-bom': ['npm', '--prefix', 'frontend', 'run', 'bom'],
         'secret-scan': [sys.executable, 'scripts/scan_secrets.py'],
+        'maritime-preflight': ['npm', '--prefix', 'frontend', 'run', 'demo:preflight'],
+        'maritime-controller': ['node', '--test', 'frontend/support/maritime/controller.test.mjs'],
+        'maritime-typecheck': ['npm', '--prefix', 'frontend', 'run', 'test:maritime:type-check'],
+        'maritime-offline-sync': ['npm', '--prefix', 'frontend', 'run', 'test:maritime:demo'],
     }
 
 
@@ -89,7 +93,7 @@ def main() -> int:
                   'details': 'No execution configured. No completion is claimed.', 'log_path': None})
                   for check_id in definition.required_checks]
         build = by_id.get('frontend-build', {}).get('exit_code')
-        implemented = definition.task_id == 'task-dashboard'
+        implemented = definition.task_id in {'task-dashboard', 'maritime-demo'}
         tasks.append({'task_id': definition.task_id, 'title': definition.title,
                       'summary': definition.summary, 'required_checks': checks,
                       'stages': {
@@ -100,11 +104,11 @@ def main() -> int:
                       }})
     git = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True,
                          text=True, check=False)
-    manifest = {'schema_version': '1.0', 'repo': os.getenv('GITHUB_REPOSITORY', 'bmifsud/ADLC-PORTAL'),
+    manifest = {'schema_version': '1.0', 'repo': os.getenv('GITHUB_REPOSITORY', 'bmifsud/POC-Maritime-logistics-SaaS'),
                 'commit_sha': git.stdout.strip() if git.returncode == 0 else None,
                 'intent_sha256': hashlib.sha256(intent_content.encode()).hexdigest(),
                 'synced_at': datetime.now(UTC).isoformat(), 'tasks': tasks,
-                'verification_runs': results, 'assurance': 'Local unsigned execution evidence'}
+                'verification_runs': results, 'working_tree_dirty': bool(subprocess.run(['git', 'status', '--porcelain'], cwd=ROOT, capture_output=True, text=True, check=False).stdout.strip()), 'assurance': 'Local unsigned execution evidence'}
     temporary = output / 'manifest.json'
     temporary.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     temporary.chmod(0o644)

@@ -194,7 +194,8 @@ def test_parse_repository_intent():
     parser = importlib.import_module('backend.app.intent_parser')
     root = Path(__file__).resolve().parents[1]
     tasks = parser.parse_intent((root / 'intent.md').read_text())
-    assert [t.task_id for t in tasks] == ['bridge-reconnect', 'backup-restore', 'task-dashboard']
+    assert [t.task_id for t in tasks] == ['bridge-reconnect', 'backup-restore', 'task-dashboard', 'maritime-demo']
+    assert 'android-chrome-smoke' in tasks[3].required_checks
     assert tasks[1].required_checks == ('encrypted-upload', 'restore-test')
 
 

@@ -111,3 +111,16 @@ The branch-testing controller adds an authenticated branch selector populated fr
 This is trusted-branch execution, not a sandbox: tests and application code execute as the Linux account. Do not approve untrusted branches. Child test processes receive a reduced environment, but still share the account filesystem and network. Container sandboxing and physical Android acceptance remain separate gates. The existing live controller must be deliberately restarted from this version to show the selector.
 
 Branch-runner validation: four tests passed for main and four for temp/termux-launcher in isolated fetched checkouts. Cleanup on this Android-backed host failed with EPERM/ENOSYS and a libuv abort; full lifecycle acceptance is blocked on this host. Failed cleanup is not a passing run. Validate preparation, cancellation and cleanup on a supported Linux filesystem before deployment. Mobile-emulated selector, SHA display and layout passed. The existing live single-checkout controller remains unchanged.
+
+## Lifecycle follow-up verification
+
+Branch-runner subprocess regression tests now cover successful preparation, rejection of a moved branch before installation, installation failure, and SIGTERM cancellation with checkout removal. Commands are replaced by private executable fixtures; these tests make no network requests or dependency installations. Cancellation previously exited immediately and left the checkout and active command behind; it now kills the active command and reaches cleanup before returning 143.
+
+These isolated tests do not certify real Git/npm cleanup on Android-backed filesystems, descendant process termination, controller SIGKILL handling, or physical Android operation. The controller's hard process-group kill remains a separate lifecycle limitation.
+
+Remaining acceptance sequence:
+1. Run full verification at the final revision, including browser tests.
+2. Rehearse real fetched-checkout preparation, cancellation and cleanup on supported Linux; test descendant processes and controller shutdown/timeout cleanup explicitly.
+3. Validate Docker build/smoke checks on a Docker-capable host.
+4. Deliberately restart the approved controller and perform physical Android/SSH acceptance; prepare a labelled fallback recording.
+5. Review dependency findings and confirm protected remote CI before review/merge. Do not mark Android acceptance passed based on fixture or emulated tests.

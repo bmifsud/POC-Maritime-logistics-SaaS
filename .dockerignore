@@ -10,3 +10,6 @@
 artifacts
 frontend/test-results
 .env
+
+**/.auth
+**/artifacts

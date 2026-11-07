@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {CircleCheck,CircleAlert,Clock3,Search,ArrowRight,RefreshCw,X,Circle} from 'lucide-react';
 import './style.css';
 type Stage={state:string;subtext:string};
@@ -17,6 +17,7 @@ export default function App(){
  async function refresh(){const id=++refreshId.current;logId.current++;setLog(null);setLogLoading(false);setLoading(true);try{const response=await fetch('/api/v1/portal/status');if(!response.ok)throw Error(`Evidence API returned ${response.status}. Run the evidence emitter and retry.`);const next:Portal=await response.json();if(id!==refreshId.current)return;setData(next);setSelected(old=>next.tasks.some(t=>t.task_id===old)?old:next.tasks.find(t=>t.stages.verify?.state==='blocked')?.task_id||next.tasks[0]?.task_id||null);setError('');}catch(e){if(id===refreshId.current)setError(e instanceof Error?e.message:'Evidence API unavailable');}finally{if(id===refreshId.current)setLoading(false);}}
  useEffect(()=>{void refresh();return()=>{refreshId.current++;logId.current++;};},[]);
  useEffect(()=>{logId.current++;setLog(null);setLogLoading(false);},[selected]);
+ useLayoutEffect(()=>{if(!log)return;const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setLog(null);};window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape);},[log!==null]);
  useEffect(()=>{if(log){opener.current=document.activeElement as HTMLElement;close.current?.focus();return()=>opener.current?.focus();}},[log!==null]);
  async function openLog(check:Check){const id=++logId.current;setLogLoading(true);try{const response=await fetch(`/api/v1/portal/logs/${encodeURIComponent(check.check_id)}`);if(!response.ok)throw Error(`Log unavailable (${response.status})`);const body=await response.text();if(id===logId.current)setLog({name:check.name,body});}catch(e){if(id===logId.current)setLog({name:check.name,body:e instanceof Error?e.message:'Log unavailable'});}finally{if(id===logId.current)setLogLoading(false);}}
  const firstLog=task?.required_checks.find(c=>c.log_path),taskName=task?.task_id==='backup-restore'?'restore':task?.title.toLowerCase()||'task';

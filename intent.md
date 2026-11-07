@@ -132,3 +132,25 @@ Do not claim exhaustive absence of unhandled rejections without dedicated tests.
 References: [AGENTS.md](AGENTS.md), [handoff](docs/HANDOFF.md),
 [backend acceptance tests](tests/test_gate_evaluator.py),
 [frontend component integration tests](frontend/tests/portal.spec.ts).
+
+## 8. Maritime QA demonstration addendum
+
+The local maritime QA demonstration is an additive, isolated reference harness for the interview scenario. It does not claim production booking coverage or replace the ADLC portal.
+
+### Acceptance criteria
+
+- A typed Playwright POM creates a synthetic booking without UI login.
+- A browser context set offline persists a pending booking locally and synchronizes after reconnecting.
+- Sync requests incur at least 600 ms controlled latency before `route.continue()`.
+- The volatile provider boundary is fulfilled deterministically and never contacted live.
+- A fixed UTC instant renders the expected Auckland port-local date.
+- A loopback-only fixed-command controller can be opened from Android Chrome through an SSH local forward.
+- The controller prevents concurrent runs, exposes server-owned status, and returns a bounded result.
+- Existing portal checks remain unchanged and pass.
+- Local verification records actual command exit codes and sanitized logs; no GitHub Actions run is required.
+
+### Explicit exclusions
+
+Native Playwright execution on Android, public SSH exposure, production credentials, live provider calls, packet-loss simulation, and claim of production readiness are excluded. Android Chrome smoke validation requires the target device and approved Linux SSH endpoint and must remain visibly unavailable until executed.
+
+- **Task 4 (`maritime-demo`):** Maritime demo — Deterministic Android-controlled local resilience demonstration. Required checks: `maritime-typecheck`, `maritime-offline-sync`, `maritime-preflight`, `maritime-controller`, `android-chrome-smoke`.

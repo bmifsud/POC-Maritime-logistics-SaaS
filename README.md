@@ -129,3 +129,7 @@ Render review services may set `ADLC_PREVIEW_MODE=1` to show intent-defined pend
 tasks when no evidence manifest has been supplied. This read-only empty state does
 not write a manifest or claim checks passed. Normal mode retains HTTP 404 for a
 missing manifest. SQLite state on a free review instance is ephemeral.
+
+## Maritime resilience interview demo
+
+An additive local Playwright demonstration now covers persistent offline bookings, explicit reconnect/retry with 650 ms satellite-style latency, deterministic provider mocking and port-local dates. Android Chrome controls a loopback Linux dashboard through an independently established SSH tunnel; GitHub Actions is not required. See [the operator runbook](docs/maritime-demo.md) for startup, verified results, limitations and acceptance checks. This reference harness is not a production maritime integration.

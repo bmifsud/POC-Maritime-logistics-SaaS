@@ -7,4 +7,10 @@ __pycache__/
 node_modules/
 dist/
 test-results/
+artifacts/
 .env
+.auth/
+test-results-maritime/
+# Bootstrap-generated controller files at repository root.
+/controller.log
+/controller.pid

@@ -1,0 +1,8 @@
+FROM mcr.microsoft.com/playwright:v1.61.0-noble
+WORKDIR /work/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci && mkdir -p /work/artifacts && chown -R pwuser:pwuser /work
+COPY --chown=pwuser:pwuser frontend/ ./
+USER pwuser
+ENV MARITIME_DEMO=1
+CMD ["npm", "run", "test:maritime:demo"]

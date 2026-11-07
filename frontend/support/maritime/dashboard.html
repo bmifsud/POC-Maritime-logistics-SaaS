@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maritime QA Control</title>
+<style>*{box-sizing:border-box}body{font:18px system-ui;background:#0f172a;color:#e2e8f0;padding:1rem;margin:0}main{max-width:44rem;margin:auto}button,a{display:block;width:100%;padding:1rem;margin:.8rem 0;border:0;border-radius:.5rem;background:#0369a1;color:white;font:inherit;text-align:center}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#020617;padding:1rem;max-height:45vh;overflow:auto}a[hidden]{display:none}</style>
+<main><h1>Maritime QA demo</h1><p>Android controls Linux Playwright. All booking data is synthetic.</p><p id="state" role="status">Connecting…</p><button id="run" disabled>Run maritime demo</button><button id="reset">Reset displayed result</button><a id="report" hidden target="_blank" rel="noopener">Open this run's report</a><pre id="output">Checking controller…</pre></main>
+<script>
+const csrf='__CSRF__',state=document.querySelector('#state'),out=document.querySelector('#output'),run=document.querySelector('#run'),reset=document.querySelector('#reset'),report=document.querySelector('#report');
+let busy=false;
+async function action(endpoint){try{const r=await fetch('/api/'+endpoint,{method:'POST',headers:{'x-csrf-token':csrf}});const d=await r.json();if(!r.ok)throw Error(d.error);await poll()}catch(e){state.textContent=e.message}}
+run.onclick=()=>action('run');reset.onclick=()=>action('reset');
+async function poll(){if(busy)return;busy=true;try{const r=await fetch('/api/status',{signal:AbortSignal.timeout(4000)});if(!r.ok)throw Error('Controller unavailable');const d=await r.json(),x=d.active||d.last;run.disabled=!!d.active;reset.disabled=!!d.active;state.textContent=x?`${x.status.toUpperCase()} · ${x.id} · ${x.startedAt}`:'Ready — run deterministic checks';out.textContent=x?`${x.revision} (dirty: ${x.dirty})\n${x.output}`:'No run yet. Browser and dependencies must be installed before the interview.';report.hidden=!d.last||!!d.active;if(d.last)report.href='/reports/'+d.last.id+'/index.html'}catch(e){state.textContent='Disconnected — reconnect SSH tunnel; Linux run continues';run.disabled=true;report.hidden=true}finally{busy=false}}
+poll();setInterval(poll,1000);
+</script></html>

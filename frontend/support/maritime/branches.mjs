@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 const exec = promisify(execFile);
 export const repository = 'https://github.com/bmifsud/POC-Maritime-logistics-SaaS.git';
-export const allowedBranches = ['main', 'temp/termux-launcher', 'feat/portal-branch-testing'];
+export const allowedBranches = ['main', 'feat/portal-branch-testing'];
 export function validateSelection(branch, revision) {
   if (!allowedBranches.includes(branch) || !/^[a-f0-9]{40}$/.test(revision ?? '')) throw new Error('Select an approved branch and full revision');
 }

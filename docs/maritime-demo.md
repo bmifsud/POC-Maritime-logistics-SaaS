@@ -106,7 +106,7 @@ The Linux SSH endpoint must already be reachable from Android and allow forwardi
 
 ## Approved branch testing
 
-The branch-testing controller adds an authenticated branch selector populated from the fixed repository remote. Only `main`, `temp/termux-launcher`, and `feat/portal-branch-testing` are approved. Runs pin the displayed full SHA, fetch into a disposable detached checkout, reject branch movement, install the selected lockfile with lifecycle scripts disabled, and invoke the fixed maritime command. Each result records branch/SHA and retains its own report. Network refresh never silently substitutes stale branch data. One active run is allowed; cold installation may take minutes.
+The branch-testing controller adds an authenticated branch selector populated from the fixed repository remote. Only `main` and `feat/portal-branch-testing` are approved. Runs pin the displayed full SHA, fetch into a disposable detached checkout, reject branch movement, install the selected lockfile with lifecycle scripts disabled, and invoke the fixed maritime command. Each result records branch/SHA and retains its own report. Network refresh never silently substitutes stale branch data. One active run is allowed; cold installation may take minutes.
 
 This is trusted-branch execution, not a sandbox: tests and application code execute as the Linux account. Do not approve untrusted branches. Child test processes receive a reduced environment, but still share the account filesystem and network. Container sandboxing and physical Android acceptance remain separate gates. The existing live controller must be deliberately restarted from this version to show the selector.
 

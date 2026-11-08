@@ -20,6 +20,9 @@ test('controller enforces origin/session and serves safe dashboard', async () =>
   const reset = await fetch(base+'/api/reset', { method: 'POST', headers: { cookie, origin: base, 'x-csrf-token': csrf } });
   assert.equal(reset.status, 200);
   assert.equal((await fetch(base+'/reports/%2e%2e%2fpackage.json')).status, 403);
+  const headers = { cookie, origin: base, 'x-csrf-token': csrf, 'content-type': 'application/json' };
+  assert.equal((await fetch(base+'/api/run', { method: 'POST', headers, body: JSON.stringify({ branch: 'main;evil', revision: 'a'.repeat(40) }) })).status, 400);
+  assert.equal((await fetch(base+'/api/branches')).status, 401);
   assert.equal((await fetch(base+'/health')).status, 200);
   assert.equal((await fetch(base+'/reports/last.json')).status, 403);
   assert.equal((await fetch(base+'/api/status')).status, 401);

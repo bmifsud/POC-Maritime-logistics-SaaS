@@ -1,135 +1,77 @@
-# ADLC Supervision Portal
+# Maritime Logistics SaaS — Resilience & QA Proof of Concept
 
-## Current state and capabilities
+A small, reproducible engineering demonstration for **maritime booking workflows under unreliable connectivity**. It focuses on the operational consequences of offline work, delayed links, booking synchronization, and port-local dates—not on pretending to be a production shipping platform.
 
-Reviewed 2026-11-02 against the default branch `main` (source tree `231b14b13bcd51f235ba6f04c488ec4bcfaab9b9`). This is a source/documentation review; no application, device, external API or test suite was executed for this README update.
+> **Scope:** interview portfolio / deterministic prototype. No live carrier or booking-provider integration, no production customer data, and no deployment or maritime certification claim.
 
-Reusable starting repository based on the ADLC supervision portal.
+## The operational problem
 
-Includes the deterministic FastAPI/SQLite evaluator, React UI, intent/evidence scaffolding, emitter, tests and container/CI configuration.
+Maritime teams may work across ports, vessels, and remote connections. A transient network loss should not silently lose a booking request, and retries should not create duplicate operations. Time displayed to an operator also needs to match the relevant port's local calendar date.
 
-Source entry points: [intent.md](intent.md) · [scripts/emit_evidence.py](scripts/emit_evidence.py).
+This repository demonstrates how I approach such problems: define observable acceptance criteria, isolate external dependencies, automate failure scenarios, and preserve test evidence.
 
-**Verification:** Latest workflow observed: [success](https://github.com/bmifsud/ADLC-template/actions/runs/41443529586) at commit `231b14b13bcd51f235ba6f04c488ec4bcfaab9b9` on `main`. This result applies to that run's scope, not all capabilities.
+## What the demonstration covers
 
-**Limitations / pending validation:** Template adoption still requires repository-specific intent, evidence, configuration and branch protection. Inherited portal examples do not prove another project's acceptance gates.
+| Scenario | Behavior exercised | Automated evidence |
+| --- | --- | --- |
+| Offline booking | A synthetic booking remains pending in local browser storage while the test browser is offline | [Booking synchronization test](frontend/tests/maritime/booking-sync.spec.ts) |
+| Reconnect and retry | Explicit retry synchronizes the pending record; the mock API returns a single booking after page reload | [Booking synchronization test](frontend/tests/maritime/booking-sync.spec.ts) |
+| High-latency link | The sync route incurs a deterministic 650 ms delay; test asserts at least 600 ms | [Maritime fixture](frontend/fixtures/maritimeFixtures.ts) |
+| Volatile third party | A provider endpoint is fulfilled with deterministic test data rather than a live network call | [Provider test](frontend/tests/maritime/booking-sync.spec.ts) |
+| Port time zones | A fixed UTC instant resolves to the expected Auckland calendar date | [Timezone tests](frontend/tests/maritime/timezone.spec.ts) |
+| Evidence and execution | A local, loopback-only dashboard triggers approved tests and makes reports available | [Controller](frontend/support/maritime/controller.mjs) and [operator runbook](docs/maritime-demo.md) |
 
-FastAPI/Pydantic, SQLite WAL, React/TypeScript/Vite/Tailwind, and deterministic
-execution evidence for the first three vertical slices. Original AGENTS.md,
-PROMPT.md and intent.md are preserved. The supplied screenshot is stored at
-`docs/portal-mockup.png`.
+**Important boundary:** The booking flow is a browser-based reference harness. Offline persistence uses localStorage, not a production-grade durable queue or cross-device synchronization system. Test mocks demonstrate testability, not a real logistics integration. The 650 ms delay does not model packet loss, bandwidth constraints, or full satellite behavior.
 
-## Run and verify
+## Five-minute interview walkthrough
 
-```sh
-python -m venv backend/.venv
-backend/.venv/bin/pip install -r backend/requirements.lock
+See **[Interview demo script and fallback plan](docs/interview-demo.md)** for a timed narrative, operator steps, what to say about trade-offs, and honest answers to expected questions.
+
+1. State the problem: keeping booking intent intact through a connection loss.
+2. Show a pending synthetic booking while the browser context is offline.
+3. Reconnect and trigger explicit retry; verify the booking synchronizes without duplication.
+4. Explain the controlled delay, deterministic provider mock, and port-local date.
+5. Open the Playwright report, then discuss what would be required before production.
+
+## Reproduce locally
+
+Requirements: supported Linux machine, Python and Node.js/npm matching the project lockfiles, and Playwright Chromium. **Android can control the demonstration via a verified SSH local forward; it is not the required execution environment.** The old Andronix/Debian tablet setup is not required.
+
+```bash
+git clone https://github.com/bmifsud/POC-Maritime-logistics-SaaS.git
+cd POC-Maritime-logistics-SaaS
 npm --prefix frontend ci
 cd frontend
 npx playwright install --with-deps chromium
-cd ..
-backend/.venv/bin/python scripts/emit_evidence.py
+npm run demo:preflight
+npm run test:maritime:demo
 ```
 
-The emitter runs Ruff, mypy, pytest, frontend lint/type-check, Playwright component
-integration tests, production build, and source secret scanning. Its exit code is
-nonzero when any check fails. It records sanitized logs, commands, exit codes, log
-hashes, full commit SHA when available, and the intent hash. Unique run directories
-avoid stale-log reuse; atomic manifest replacement avoids partial reads. Historical
-runs are retained for diagnosis. Only the emitter writes repository evidence.
+The controller dashboard can be run separately from `frontend/` using `npm run demo:controller` and is bound to `127.0.0.1:4400`. See [the operator runbook](docs/maritime-demo.md) for the report, Android tunnel, and shutdown instructions. Do not open the controller to the public internet.
 
-Backend development: `cd backend && .venv/bin/uvicorn app.main:app --port 8001`.
-Frontend development: `npm --prefix frontend run dev -- --port 4173` (API proxy: 8001).
-Tests: `backend/.venv/bin/pytest -q`; `npm --prefix frontend run test:components`.
-The latter starts its own isolated Vite server on port 4180 and mocks the API.
+For the underlying application and verification system, see [the original technical README](docs/technical-reference.md). The codebase also contains a separate **ADLC supervision portal** (FastAPI/SQLite, React, deterministic evidence gates). It is supporting engineering infrastructure, not the maritime product itself.
 
-For the session's custom Chromium location, prefix Playwright/emitter commands with
-`PLAYWRIGHT_BROWSERS_PATH=/workspace/.cache/ms-playwright`. Standard installations
-use Playwright's normal browser directory.
+## Verification status and limits
 
-## Container preview
+Repository documentation records earlier local runs covering 43 backend tests, 6 portal browser tests, 15 maritime test executions, and controller tests. Those are **historical results**, not a claim that the current HEAD or a new interview machine has passed. Verify the exact revision and host again before presenting.
 
-```sh
-docker compose up --build -d --wait
-curl --fail http://localhost:8000/api/v1/health
-```
+Still to validate: physical Android plus SSH tunnel, repeatable controller start/stop and checkout cleanup on supported Linux, Docker build, dependency advisory review, and the final automated suite. The [operator runbook](docs/maritime-demo.md) documents observed issues and acceptance gates.
 
-FastAPI serves the built frontend and API together. Evidence is a read-only bind
-mount; SQLite uses a separate writable volume with WAL enabled. The service runs as
-UID 10001 with a read-only root filesystem and no added capabilities. Set
-`ADLC_PREVIEW_PORT=8002` if port 8000 is already used.
+## Engineering decisions
 
-Base images are pinned to immutable digests. Python direct/transitive versions are
-pinned in `backend/requirements.lock`; npm uses package-lock.json. On a managed
-proxy requiring custom CA trust, build with:
+- **Test-first operational scenarios:** executable Playwright cases specify the expected behavior under offline/reconnect, latency and timezone conditions.
+- **Reproducible integrations:** external provider responses are mocked, keeping examples safe and deterministic.
+- **Transparent evidence:** reports and a deterministic verification system make failures inspectable instead of asserting success.
+- **Constrained local control plane:** a loopback-only dashboard with session/CSRF checks invokes a fixed allowed test command; this is not a sandbox for untrusted code.
+- **Honest scope:** production would need authenticated APIs, transactional/idempotent server semantics, durable encrypted queues, real network-fault simulation, observability, privacy controls and operational recovery tests.
 
-```sh
-BUILDX_CONFIG=/tmp/adlc-buildx docker build \
-  --secret id=proxy_ca,src=/etc/ssl/certs/ca-certificates.crt -t adlc-portal:local .
-ADLC_PREVIEW_PORT=8002 docker compose up --no-build -d --wait
-```
+## Repository map
 
-The CA is mounted only during dependency installation and is not copied into layers.
-TLS verification stays enabled. Do not use session-specific paths in ordinary CI.
+- `frontend/support/maritime/` — demo page, controller, test selection and branch execution.
+- `frontend/tests/maritime/` — booking resilience and timezone cases.
+- `frontend/fixtures/maritimeFixtures.ts` — deterministic test setup.
+- `docs/maritime-demo.md` — detailed operator runbook, verified history and known issues.
+- `docs/interview-demo.md` — concise presentation script.
+- `backend/`, `frontend/src/`, `tests/`, `scripts/` — independent ADLC portal and evidence infrastructure.
 
-## Architecture and API
-
-- `intent_parser.py`: strict explicit task/check definitions from intent Markdown.
-- `evidence_reader.py`: dedicated containment and extension validation; rejects `..`,
-  absolute paths and escaping symlinks before serving logs.
-- `evaluator.py`: pure task policy, independent of HTTP and SQLite. Expected checks
-  come from intent, so missing manifest records cannot manufacture a pass. All disk
-  logs are rechecked, including when using a last-valid snapshot.
-- `store.py`: persistent WAL snapshot index. Invalid manifest/Markdown responses
-  retain the last valid snapshot and include structured diagnostics.
-- `/api/v1/portal/status`: computed task stages; `/api/v1/portal/logs/{check_id}`:
-  sanitized `text/plain; charset=utf-8`; `/api/v1/health`: process health.
-
-Only the portal task's real verification checks are implemented. Bridge reconnect
-and backup/restore remain pending; no execution or success is fabricated for them.
-The UI renders GitHub connected only if the API reports it; the local backend
-reports Local repo synced. Screenshot tests inject fixture telemetry deliberately.
-
-## CI and merge protection
-
-`.github/workflows/ci.yml` uses `contents: read`, pinned action commits, source secret
-scanning, the emitter, and a container smoke check. Any failed command fails the job.
-It never uses pull_request_target or exposes write tokens to pull request code.
-
-A maintainer must enable a GitHub branch ruleset requiring **Required verification**
-before merging, and prevent bypasses/workflow changes without independent review.
-The workflow alone cannot enforce branch protection; that repository setting has
-not been changed by this work. The local scanner is pattern-based and best effort,
-not a complete secret-detection service. Local hashes and AGENTS.md do not prevent
-an actor who can edit the verifier and all artifacts from forging evidence. Protected,
-independently controlled CI is required for adversarial-agent assurance.
-
-## Handoff
-
-See `docs/HANDOFF.md` for commands, TDD evidence, changed paths and residual risks.
-
-## CI tests and dependency inventory
-
-From frontend/, run `npm run test:ci` (Playwright with focused tests forbidden).
-Run `npm run bom` to generate the repository-root `.adlc/evidence/aibom.json`
-using the pinned CycloneDX npm generator, JSON format, specification version 1.7.
-Equivalent command from frontend/:
-
-```sh
-npx --no-install @cyclonedx/cyclonedx-npm --spec-version 1.7 --output-file ../.adlc/evidence/aibom.json
-```
-
-Both commands are executed by the evidence emitter in local verification and CI.
-CI uploads the BOM with the evidence artifact; generated evidence is not committed.
-The file inventories npm dependencies, including development dependencies, and does
-not inventory Python packages, models, training data, or AI services. Its filename
-does not make it a complete AI bill of materials.
-
-Render review services may set `ADLC_PREVIEW_MODE=1` to show intent-defined pending
-tasks when no evidence manifest has been supplied. This read-only empty state does
-not write a manifest or claim checks passed. Normal mode retains HTTP 404 for a
-missing manifest. SQLite state on a free review instance is ephemeral.
-
-## Maritime resilience interview demo
-
-An additive local Playwright demonstration now covers persistent offline bookings, explicit reconnect/retry with 650 ms satellite-style latency, deterministic provider mocking and port-local dates. Android Chrome controls a loopback Linux dashboard through an independently established SSH tunnel; GitHub Actions is not required. See [the operator runbook](docs/maritime-demo.md) for startup, verified results, limitations and acceptance checks. This reference harness is not a production maritime integration.
+**Author's objective:** show how I reason about domain-specific reliability, automation, failure handling and verification. This is an engineering portfolio artifact, not a commercial maritime SaaS service.
